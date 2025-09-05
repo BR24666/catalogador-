@@ -146,8 +146,8 @@ export default function CandleGrid({ candles, pair, timeframe, date, loading }: 
                       key={`${hour}-${minute}`}
                       className={`w-8 h-8 border border-gray-600 flex items-center justify-center text-xs font-medium ${
                         candle.color === 'GREEN'
-                          ? 'bg-green-500 text-white'
-                          : 'bg-red-500 text-white'
+                          ? 'candle-green'
+                          : 'candle-red'
                       }`}
                       title={`${formatTime(hour, minute)} - ${candle.color} - O: ${candle.open_price} C: ${candle.close_price}`}
                     >

@@ -13,19 +13,11 @@
 
 @layer components {
   .candle-green {
-    @apply bg-green-candle text-white;
+    @apply bg-green-500 text-white;
   }
   
   .candle-red {
-    @apply bg-red-candle text-white;
-  }
-  
-  .candle-green-light {
-    @apply bg-green-light text-green-800;
-  }
-  
-  .candle-red-light {
-    @apply bg-red-light text-red-800;
+    @apply bg-red-500 text-white;
   }
   
   .time-grid {

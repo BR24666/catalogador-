@@ -19,28 +19,14 @@ export default function Home() {
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
-    // Iniciar catalogador automaticamente
-    const autoStart = async () => {
-      try {
-        const response = await fetch('/api/catalog/auto-start')
-        const result = await response.json()
-        if (result.success) {
-          console.log('✅ Catalogador iniciado automaticamente')
-        }
-      } catch (error) {
-        console.error('Erro ao iniciar catalogador:', error)
-      }
-    }
-    
-    autoStart()
     loadStatus()
     loadCandles()
     
-    // Atualizar dados a cada 10 segundos
+    // Atualizar dados a cada 30 segundos
     const interval = setInterval(() => {
       loadCandles()
       loadStatus()
-    }, 10000)
+    }, 30000)
     
     return () => clearInterval(interval)
   }, [])
@@ -58,36 +44,13 @@ export default function Home() {
   const loadCandles = async () => {
     setLoading(true)
     try {
-      console.log('🔍 Carregando velas para:', selectedPair, selectedTimeframe, selectedDate)
-      
       const data = await catalogService.getCandlesByDateRange(
         selectedPair,
         selectedTimeframe,
         selectedDate,
         selectedDate
       )
-      
-      console.log('📊 Velas carregadas:', data.length)
       setCandles(data)
-      
-      // Se não há dados, tentar carregar dados de hoje
-      if (data.length === 0) {
-        const today = format(new Date(), 'yyyy-MM-dd')
-        if (selectedDate !== today) {
-          console.log('🔄 Tentando carregar dados de hoje:', today)
-          const todayData = await catalogService.getCandlesByDateRange(
-            selectedPair,
-            selectedTimeframe,
-            today,
-            today
-          )
-          console.log('📊 Dados de hoje:', todayData.length)
-          if (todayData.length > 0) {
-            setCandles(todayData)
-            setSelectedDate(today)
-          }
-        }
-      }
     } catch (error) {
       console.error('Erro ao carregar velas:', error)
     } finally {
@@ -95,9 +58,14 @@ export default function Home() {
     }
   }
 
-  const handleStop = async () => {
-    await catalogService.stopCataloging()
-    setIsRunning(false)
+  const handleStartStop = async () => {
+    if (isRunning) {
+      await catalogService.stopCataloging()
+      setIsRunning(false)
+    } else {
+      await catalogService.startCataloging(60)
+      setIsRunning(true)
+    }
     loadStatus()
   }
 
@@ -126,7 +94,7 @@ export default function Home() {
           selectedPair={selectedPair}
           selectedTimeframe={selectedTimeframe}
           selectedDate={selectedDate}
-          onStop={handleStop}
+          onStartStop={handleStartStop}
           onRefresh={handleRefresh}
           onPairChange={setSelectedPair}
           onTimeframeChange={setSelectedTimeframe}
@@ -145,7 +113,7 @@ export default function Home() {
         </div>
 
         {/* Stats */}
-        <div className="mt-8 grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="bg-gray-800 p-4 rounded-lg">
             <h3 className="text-lg font-semibold mb-2">Status</h3>
             <p className={isRunning ? 'text-green-400' : 'text-red-400'}>
@@ -164,13 +132,6 @@ export default function Home() {
           <div className="bg-gray-800 p-4 rounded-lg">
             <h3 className="text-lg font-semibold mb-2">Velas Carregadas</h3>
             <p className="text-gray-300">{candles.length} velas</p>
-          </div>
-          <div className="bg-gray-800 p-4 rounded-lg">
-            <h3 className="text-lg font-semibold mb-2">Atualização</h3>
-            <p className="text-blue-400 flex items-center gap-2">
-              <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse"></div>
-              A cada 10s
-            </p>
           </div>
         </div>
       </div>
