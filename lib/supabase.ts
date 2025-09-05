@@ -7,9 +7,21 @@ export const supabase = {
     select: (columns = '*') => ({
       eq: (column: string, value: any) => ({
         order: (column: string, options?: any) => ({
+          single: () => ({
+            then: (callback: (data: any) => void) => {
+              console.log(`Mock select single from ${table} where ${column} = ${value} order by ${column}`)
+              callback({ data: null, error: null })
+            }
+          }),
           then: (callback: (data: any) => void) => {
             console.log(`Mock select from ${table} where ${column} = ${value} order by ${column}`)
             callback({ data: [], error: null })
+          }
+        }),
+        single: () => ({
+          then: (callback: (data: any) => void) => {
+            console.log(`Mock select single from ${table} where ${column} = ${value}`)
+            callback({ data: null, error: null })
           }
         }),
         then: (callback: (data: any) => void) => {
