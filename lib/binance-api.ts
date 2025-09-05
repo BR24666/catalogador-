@@ -217,4 +217,79 @@ export class BinanceAPI {
     
     return this.getHistoricalCandles(pairs, timeframes, startDate, endDate)
   }
+
+  async getHistoricalData(
+    pair: string,
+    timeframe: string,
+    startTime: number,
+    endTime: number,
+    limit: number = 1000
+  ): Promise<ProcessedKline[]> {
+    try {
+      console.log(`📅 Buscando dados históricos para ${pair} ${timeframe} de ${new Date(startTime).toISOString()} até ${new Date(endTime).toISOString()}`)
+      
+      const processedKlines: ProcessedKline[] = []
+      const timeframeMs = this.getTimeframeMs(timeframe)
+      const maxRecordsPerRequest = 1000
+      
+      // Calcular quantos chunks precisamos para o período
+      const totalTime = endTime - startTime
+      const totalPossibleRecords = Math.floor(totalTime / timeframeMs)
+      
+      if (totalPossibleRecords > maxRecordsPerRequest) {
+        console.log(`📊 Período grande detectado: ~${totalPossibleRecords} registros possíveis. Dividindo em chunks...`)
+        
+        let currentStartTime = startTime
+        let chunkCount = 0
+        
+        while (currentStartTime < endTime) {
+          const currentEndTime = Math.min(currentStartTime + (timeframeMs * maxRecordsPerRequest), endTime)
+          
+          console.log(`🔄 Processando chunk ${++chunkCount}: ${new Date(currentStartTime).toISOString()} até ${new Date(currentEndTime).toISOString()}`)
+          
+          try {
+            const klines = await this.getKlines(pair, timeframe, maxRecordsPerRequest, currentStartTime, currentEndTime)
+            
+            for (const kline of klines) {
+              try {
+                const processed = this.processKline(kline, pair, timeframe)
+                processedKlines.push(processed)
+              } catch (error) {
+                console.error(`Erro ao processar kline histórica:`, error)
+              }
+            }
+            
+            console.log(`✅ Chunk ${chunkCount} processado: ${klines.length} velas`)
+            
+            // Pausa entre chunks para não sobrecarregar a API
+            await new Promise(resolve => setTimeout(resolve, 200))
+            
+          } catch (error) {
+            console.error(`Erro no chunk ${chunkCount}:`, error)
+          }
+          
+          currentStartTime = currentEndTime + timeframeMs
+        }
+      } else {
+        // Período pequeno, busca direta
+        const klines = await this.getKlines(pair, timeframe, limit, startTime, endTime)
+        
+        for (const kline of klines) {
+          try {
+            const processed = this.processKline(kline, pair, timeframe)
+            processedKlines.push(processed)
+          } catch (error) {
+            console.error(`Erro ao processar kline histórica:`, error)
+          }
+        }
+      }
+      
+      console.log(`✅ Total processadas: ${processedKlines.length} velas históricas`)
+      return processedKlines
+      
+    } catch (error) {
+      console.error(`Erro ao buscar dados históricos para ${pair} ${timeframe}:`, error)
+      throw error
+    }
+  }
 }

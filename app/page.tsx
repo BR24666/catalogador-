@@ -5,7 +5,6 @@ import { CatalogService } from '@/lib/catalog-service'
 import { CandleData } from '@/lib/supabase'
 import CandleGrid from '@/components/CandleGrid'
 import ControlPanel from '@/components/ControlPanel'
-import HistoricalDataCollector from '@/components/HistoricalDataCollector'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 
@@ -15,7 +14,6 @@ export default function Home() {
   const [lastUpdate, setLastUpdate] = useState<string | null>(null)
   const [selectedPair, setSelectedPair] = useState<string>('SOLUSDT')
   const [selectedTimeframe, setSelectedTimeframe] = useState<string>('1m')
-  const [activeTab, setActiveTab] = useState<'realtime' | 'historical'>('realtime')
   const [selectedDate, setSelectedDate] = useState<string>(format(new Date(), 'yyyy-MM-dd'))
   const [candles, setCandles] = useState<CandleData[]>([])
   const [loading, setLoading] = useState(false)
@@ -23,22 +21,53 @@ export default function Home() {
   useEffect(() => {
     const initializeApp = async () => {
       try {
+        console.log('🚀 Inicializando aplicação...')
+        
         // Inicializar configurações do banco
         await fetch('/api/init', { method: 'POST' })
+        console.log('✅ Configurações do banco inicializadas')
         
-        // Carregar status e dados
+        // Carregar dados históricos de 2 meses atrás
+        console.log('📅 Carregando dados históricos de 2 meses...')
+        const endDate = new Date()
+        const startDate = new Date()
+        startDate.setMonth(startDate.getMonth() - 2)
+        
+        const startDateStr = startDate.toISOString().split('T')[0]
+        const endDateStr = endDate.toISOString().split('T')[0]
+        
+        try {
+          await handleLoadHistorical(startDateStr, endDateStr)
+          console.log('✅ Dados históricos carregados com sucesso!')
+        } catch (error) {
+          console.error('❌ Erro ao carregar dados históricos:', error)
+        }
+        
+        // Carregar status e dados atuais
         await loadStatus()
         await loadCandles()
+        console.log('✅ Status e dados carregados')
         
         // Iniciar catalogador automaticamente
         const status = await catalogService.getCatalogStatus()
         if (!status.isRunning) {
-          console.log('Iniciando catalogador automaticamente...')
+          console.log('🔄 Iniciando catalogador automaticamente...')
           await catalogService.startCataloging(60) // 1 minuto
           setIsRunning(true)
+          console.log('✅ Catalogador iniciado automaticamente')
+        } else {
+          console.log('✅ Catalogador já estava rodando')
+          setIsRunning(true)
         }
+        
+        console.log('🎉 Aplicação inicializada com sucesso!')
       } catch (error) {
-        console.error('Erro na inicialização:', error)
+        console.error('❌ Erro na inicialização:', error)
+        // Tentar novamente em 5 segundos
+        setTimeout(() => {
+          console.log('🔄 Tentando reinicializar...')
+          initializeApp()
+        }, 5000)
       }
     }
     
@@ -113,106 +142,126 @@ export default function Home() {
     }
   }
 
+  const handleTestSupabase = async () => {
+    try {
+      const response = await fetch('/api/test-supabase')
+      const result = await response.json()
+      
+      if (result.success) {
+        alert('✅ Conexão com Supabase OK!\n\n' + 
+              `Registros existentes: ${result.data.existingRecords}\n` +
+              `Teste de inserção: ${result.data.insertTest ? 'Sucesso' : 'Falhou'}`)
+      } else {
+        alert('❌ Erro na conexão com Supabase:\n' + result.message)
+      }
+    } catch (error) {
+      alert('❌ Erro ao testar Supabase: ' + error)
+    }
+  }
+
+  const handleLoadHistorical = async (startDate: string, endDate: string) => {
+    try {
+      const response = await fetch('/api/historical-data', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          startDate,
+          endDate,
+          limit: 1000
+        }),
+      })
+      
+      const result = await response.json()
+      
+      if (result.success) {
+        console.log('✅ Dados históricos carregados:', result.stats)
+        // Recarregar dados atuais
+        await loadCandles()
+        alert(`✅ Dados históricos carregados com sucesso!\n\n` +
+              `Encontrados: ${result.stats.totalFound} velas\n` +
+              `Salvos: ${result.stats.saved} velas\n` +
+              `Erros: ${result.stats.errors} velas\n` +
+              `Período: ${result.stats.period.start} até ${result.stats.period.end}`)
+      } else {
+        throw new Error(result.error || 'Erro desconhecido')
+      }
+    } catch (error) {
+      console.error('Erro ao carregar dados históricos:', error)
+      throw error
+    }
+  }
+
   return (
     <div className="bg-gray-900 text-white p-6">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-4xl font-bold text-center mb-2">
-            📊 Catalogador de Velas
+            📊 Catalogador de Velas SOL/USD
           </h1>
           <p className="text-gray-400 text-center">
-            BTC, XRP, SOL | Múltiplos Timeframes | Dados Históricos + Tempo Real
+            Coleta automática | 1 minuto | Dados históricos + Tempo real
           </p>
+          {isRunning && (
+            <div className="flex items-center justify-center gap-2 mt-4 text-green-400">
+              <div className="w-3 h-3 bg-green-400 rounded-full animate-pulse"></div>
+              <span className="text-sm font-medium">Sistema ativo - Coletando dados automaticamente</span>
+            </div>
+          )}
         </div>
 
-        {/* Tabs */}
-        <div className="mb-8">
-          <div className="flex space-x-1 bg-gray-800 p-1 rounded-lg">
-            <button
-              onClick={() => setActiveTab('realtime')}
-              className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
-                activeTab === 'realtime'
-                  ? 'bg-blue-600 text-white'
-                  : 'text-gray-400 hover:text-white'
-              }`}
-            >
-              🔴 Tempo Real
-            </button>
-            <button
-              onClick={() => setActiveTab('historical')}
-              className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
-                activeTab === 'historical'
-                  ? 'bg-blue-600 text-white'
-                  : 'text-gray-400 hover:text-white'
-              }`}
-            >
-              📊 Dados Históricos
-            </button>
+        {/* Control Panel */}
+        <ControlPanel
+          isRunning={isRunning}
+          lastUpdate={lastUpdate}
+          selectedPair={selectedPair}
+          selectedTimeframe={selectedTimeframe}
+          selectedDate={selectedDate}
+          onStartStop={handleStartStop}
+          onRefresh={handleRefresh}
+          onPairChange={setSelectedPair}
+          onTimeframeChange={setSelectedTimeframe}
+          onDateChange={setSelectedDate}
+          onTestConnection={handleTestConnection}
+          onTestSupabase={handleTestSupabase}
+          onLoadHistorical={handleLoadHistorical}
+        />
+
+        {/* Candle Grid */}
+        <div className="mt-8">
+          <CandleGrid
+            candles={candles}
+            pair={selectedPair}
+            timeframe={selectedTimeframe}
+            date={selectedDate}
+            loading={loading}
+          />
+        </div>
+
+        {/* Stats */}
+        <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="bg-gray-800 p-4 rounded-lg">
+            <h3 className="text-lg font-semibold mb-2">Status</h3>
+            <p className={isRunning ? 'text-green-400' : 'text-red-400'}>
+              {isRunning ? '🟢 Ativo' : '🔴 Parado'}
+            </p>
+          </div>
+          <div className="bg-gray-800 p-4 rounded-lg">
+            <h3 className="text-lg font-semibold mb-2">Última Atualização</h3>
+            <p className="text-gray-300">
+              {lastUpdate 
+                ? format(new Date(lastUpdate), 'dd/MM/yyyy HH:mm:ss', { locale: ptBR })
+                : 'Nunca'
+              }
+            </p>
+          </div>
+          <div className="bg-gray-800 p-4 rounded-lg">
+            <h3 className="text-lg font-semibold mb-2">Velas Carregadas</h3>
+            <p className="text-gray-300">{candles.length} velas</p>
           </div>
         </div>
-
-        {/* Content based on active tab */}
-        {activeTab === 'realtime' ? (
-          <>
-            {/* Control Panel */}
-            <ControlPanel
-              isRunning={isRunning}
-              lastUpdate={lastUpdate}
-              selectedPair={selectedPair}
-              selectedTimeframe={selectedTimeframe}
-              selectedDate={selectedDate}
-              onStartStop={handleStartStop}
-              onRefresh={handleRefresh}
-              onPairChange={setSelectedPair}
-              onTimeframeChange={setSelectedTimeframe}
-              onDateChange={setSelectedDate}
-              onTestConnection={handleTestConnection}
-            />
-
-            {/* Candle Grid */}
-            <div className="mt-8">
-              <CandleGrid
-                candles={candles}
-                pair={selectedPair}
-                timeframe={selectedTimeframe}
-                date={selectedDate}
-                loading={loading}
-              />
-            </div>
-
-            {/* Stats */}
-            <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="bg-gray-800 p-4 rounded-lg">
-                <h3 className="text-lg font-semibold mb-2">Status</h3>
-                <p className={isRunning ? 'text-green-400' : 'text-red-400'}>
-                  {isRunning ? '🟢 Ativo' : '🔴 Parado'}
-                </p>
-              </div>
-              <div className="bg-gray-800 p-4 rounded-lg">
-                <h3 className="text-lg font-semibold mb-2">Última Atualização</h3>
-                <p className="text-gray-300">
-                  {lastUpdate 
-                    ? format(new Date(lastUpdate), 'dd/MM/yyyy HH:mm:ss', { locale: ptBR })
-                    : 'Nunca'
-                  }
-                </p>
-              </div>
-              <div className="bg-gray-800 p-4 rounded-lg">
-                <h3 className="text-lg font-semibold mb-2">Velas Carregadas</h3>
-                <p className="text-gray-300">{candles.length} velas</p>
-              </div>
-            </div>
-          </>
-        ) : (
-          <HistoricalDataCollector onDataCollected={(count) => {
-            console.log(`Dados históricos coletados: ${count} velas`)
-            // Atualizar dados se estivermos na aba de tempo real
-            if (activeTab === 'realtime') {
-              loadCandles()
-            }
-          }} />
-        )}
       </div>
     </div>
   )
