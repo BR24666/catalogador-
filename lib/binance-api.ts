@@ -55,15 +55,26 @@ export class BinanceAPI {
   async getKlines(
     symbol: string,
     interval: string,
-    limit: number = 1
+    limit: number = 1,
+    startTime?: number,
+    endTime?: number
   ): Promise<BinanceKline[]> {
     try {
+      const params: any = {
+        symbol,
+        interval,
+        limit,
+      }
+
+      if (startTime) {
+        params.startTime = startTime
+      }
+      if (endTime) {
+        params.endTime = endTime
+      }
+
       const response = await axios.get(`${this.baseURL}/klines`, {
-        params: {
-          symbol,
-          interval,
-          limit,
-        },
+        params,
       })
 
       return response.data
@@ -125,5 +136,85 @@ export class BinanceAPI {
     }
 
     return results
+  }
+
+  async getHistoricalCandles(
+    pairs: string[] = ['SOLUSDT'],
+    timeframes: string[] = ['1m'],
+    startDate: Date,
+    endDate: Date
+  ): Promise<ProcessedKline[]> {
+    const results: ProcessedKline[] = []
+    const startTime = startDate.getTime()
+    const endTime = endDate.getTime()
+
+    for (const pair of pairs) {
+      for (const timeframe of timeframes) {
+        try {
+          console.log(`Coletando dados históricos para ${pair} ${timeframe} de ${startDate.toISOString()} até ${endDate.toISOString()}`)
+          
+          // A Binance tem limite de 1000 velas por requisição
+          // Vamos dividir em chunks se necessário
+          const chunkSize = 1000
+          let currentStartTime = startTime
+          
+          while (currentStartTime < endTime) {
+            const currentEndTime = Math.min(currentStartTime + (this.getTimeframeMs(timeframe) * chunkSize), endTime)
+            
+            const klines = await this.getKlines(
+              pair, 
+              timeframe, 
+              chunkSize, 
+              currentStartTime, 
+              currentEndTime
+            )
+            
+            if (klines.length > 0) {
+              for (const kline of klines) {
+                const processed = this.processKline(kline, pair, timeframe)
+                results.push(processed)
+              }
+            }
+            
+            // Próximo chunk
+            currentStartTime = currentEndTime + this.getTimeframeMs(timeframe)
+            
+            // Pequena pausa para não sobrecarregar a API
+            await new Promise(resolve => setTimeout(resolve, 100))
+          }
+          
+          console.log(`Coletadas ${results.length} velas históricas para ${pair} ${timeframe}`)
+        } catch (error) {
+          console.error(`Erro ao processar dados históricos ${pair} ${timeframe}:`, error)
+        }
+      }
+    }
+
+    return results
+  }
+
+  private getTimeframeMs(timeframe: string): number {
+    const timeframeMap: { [key: string]: number } = {
+      '1m': 60 * 1000,
+      '5m': 5 * 60 * 1000,
+      '15m': 15 * 60 * 1000,
+      '1h': 60 * 60 * 1000,
+      '4h': 4 * 60 * 60 * 1000,
+      '1d': 24 * 60 * 60 * 1000,
+    }
+    
+    return timeframeMap[timeframe] || 60 * 1000
+  }
+
+  async getHistoricalCandlesByDays(
+    pairs: string[] = ['SOLUSDT'],
+    timeframes: string[] = ['1m'],
+    days: number = 7
+  ): Promise<ProcessedKline[]> {
+    const endDate = new Date()
+    const startDate = new Date()
+    startDate.setDate(startDate.getDate() - days)
+    
+    return this.getHistoricalCandles(pairs, timeframes, startDate, endDate)
   }
 }

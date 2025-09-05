@@ -51,10 +51,10 @@ export class CatalogService {
 
   private async catalogCandles(): Promise<void> {
     try {
-      console.log('Coletando dados das velas SOL/USD...')
+      console.log('Coletando dados das velas em tempo real...')
       
-      const pairs = ['SOLUSDT']
-      const timeframes = ['1m']
+      const pairs = ['BTCUSDT', 'XRPUSDT', 'SOLUSDT']
+      const timeframes = ['1m', '5m', '15m']
       
       const candles = await this.binanceAPI.getLatestCandles(pairs, timeframes)
       
@@ -112,8 +112,8 @@ export class CatalogService {
     try {
       const updateData: any = { 
         is_running: isRunning,
-        pairs: ['SOLUSDT'],
-        timeframes: ['1m'],
+        pairs: ['BTCUSDT', 'XRPUSDT', 'SOLUSDT'],
+        timeframes: ['1m', '5m', '15m'],
         updated_at: new Date().toISOString()
       }
       if (intervalSeconds) {
@@ -245,6 +245,142 @@ export class CatalogService {
     } catch (error) {
       console.error('Erro ao buscar status:', error)
       return { isRunning: false, lastUpdate: null }
+    }
+  }
+
+  async collectHistoricalData(
+    pairs: string[] = ['SOLUSDT'],
+    timeframes: string[] = ['1m'],
+    days: number = 7
+  ): Promise<{ success: boolean; message: string; count: number }> {
+    try {
+      console.log(`Iniciando coleta de dados históricos para ${days} dias...`)
+      
+      const historicalCandles = await this.binanceAPI.getHistoricalCandlesByDays(
+        pairs,
+        timeframes,
+        days
+      )
+
+      console.log(`Processando ${historicalCandles.length} velas históricas...`)
+
+      let savedCount = 0
+      for (const candle of historicalCandles) {
+        try {
+          await this.saveCandle(candle)
+          savedCount++
+        } catch (error) {
+          console.error(`Erro ao salvar vela histórica:`, error)
+        }
+      }
+
+      console.log(`Coleta histórica concluída: ${savedCount} velas salvas`)
+
+      return {
+        success: true,
+        message: `Coleta histórica concluída: ${savedCount} velas salvas`,
+        count: savedCount
+      }
+    } catch (error) {
+      console.error('Erro na coleta histórica:', error)
+      await this.logError('Erro na coleta histórica', error)
+      return {
+        success: false,
+        message: 'Erro na coleta histórica',
+        count: 0
+      }
+    }
+  }
+
+  async collectHistoricalDataByDateRange(
+    pairs: string[] = ['SOLUSDT'],
+    timeframes: string[] = ['1m'],
+    startDate: Date,
+    endDate: Date
+  ): Promise<{ success: boolean; message: string; count: number }> {
+    try {
+      console.log(`Iniciando coleta histórica de ${startDate.toISOString()} até ${endDate.toISOString()}...`)
+      
+      const historicalCandles = await this.binanceAPI.getHistoricalCandles(
+        pairs,
+        timeframes,
+        startDate,
+        endDate
+      )
+
+      console.log(`Processando ${historicalCandles.length} velas históricas...`)
+
+      let savedCount = 0
+      for (const candle of historicalCandles) {
+        try {
+          await this.saveCandle(candle)
+          savedCount++
+        } catch (error) {
+          console.error(`Erro ao salvar vela histórica:`, error)
+        }
+      }
+
+      console.log(`Coleta histórica concluída: ${savedCount} velas salvas`)
+
+      return {
+        success: true,
+        message: `Coleta histórica concluída: ${savedCount} velas salvas`,
+        count: savedCount
+      }
+    } catch (error) {
+      console.error('Erro na coleta histórica:', error)
+      await this.logError('Erro na coleta histórica', error)
+      return {
+        success: false,
+        message: 'Erro na coleta histórica',
+        count: 0
+      }
+    }
+  }
+
+  async getDataSummary(): Promise<{
+    totalCandles: number;
+    pairs: string[];
+    timeframes: string[];
+    dateRange: { start: string; end: string };
+  }> {
+    try {
+      const { data, error } = await supabase
+        .from('candle_catalog')
+        .select('pair, timeframe, timestamp')
+        .order('timestamp', { ascending: true })
+
+      if (error) {
+        console.error('Erro ao buscar resumo dos dados:', error)
+        return {
+          totalCandles: 0,
+          pairs: [],
+          timeframes: [],
+          dateRange: { start: '', end: '' }
+        }
+      }
+
+      const pairs = [...new Set(data.map(c => c.pair))]
+      const timeframes = [...new Set(data.map(c => c.timeframe))]
+      const timestamps = data.map(c => c.timestamp)
+      
+      return {
+        totalCandles: data.length,
+        pairs,
+        timeframes,
+        dateRange: {
+          start: timestamps[0] || '',
+          end: timestamps[timestamps.length - 1] || ''
+        }
+      }
+    } catch (error) {
+      console.error('Erro ao buscar resumo dos dados:', error)
+      return {
+        totalCandles: 0,
+        pairs: [],
+        timeframes: [],
+        dateRange: { start: '', end: '' }
+      }
     }
   }
 }

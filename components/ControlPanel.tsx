@@ -5,13 +5,13 @@ import { Play, Square, RefreshCw, Calendar, Clock, Coins } from 'lucide-react'
 interface ControlPanelProps {
   isRunning: boolean
   lastUpdate: string | null
-  selectedPair: 'SOLUSDT'
-  selectedTimeframe: '1m'
+  selectedPair: string
+  selectedTimeframe: string
   selectedDate: string
   onStartStop: () => void
   onRefresh: () => void
-  onPairChange: (pair: 'SOLUSDT') => void
-  onTimeframeChange: (timeframe: '1m') => void
+  onPairChange: (pair: string) => void
+  onTimeframeChange: (timeframe: string) => void
   onDateChange: (date: string) => void
   onTestConnection?: () => void
 }
@@ -30,12 +30,20 @@ export default function ControlPanel({
   onTestConnection,
 }: ControlPanelProps) {
   const pairs = [
+    { value: 'BTCUSDT', label: 'BTC/USDT', icon: '₿' },
+    { value: 'XRPUSDT', label: 'XRP/USDT', icon: '💎' },
     { value: 'SOLUSDT', label: 'SOL/USDT', icon: '☀️' },
-  ] as const
+    { value: 'ETHUSDT', label: 'ETH/USDT', icon: '⟠' },
+    { value: 'ADAUSDT', label: 'ADA/USDT', icon: '🔷' },
+  ]
 
   const timeframes = [
     { value: '1m', label: '1 Minuto' },
-  ] as const
+    { value: '5m', label: '5 Minutos' },
+    { value: '15m', label: '15 Minutos' },
+    { value: '1h', label: '1 Hora' },
+    { value: '4h', label: '4 Horas' },
+  ]
 
   return (
     <div className="bg-gray-800 rounded-lg p-6 mb-6">
@@ -89,21 +97,47 @@ export default function ControlPanel({
           </div>
         </div>
 
-        {/* Informações do Par */}
+        {/* Seleção de Par e Timeframe */}
         <div className="space-y-4">
           <h3 className="text-lg font-semibold flex items-center gap-2">
             <Coins className="w-5 h-5" />
-            Par de Negociação
+            Configurações
           </h3>
           
-          <div className="flex items-center gap-2 px-3 py-2 bg-blue-600 text-white rounded-lg">
-            <span className="text-lg">☀️</span>
-            <span className="font-medium">SOL/USD</span>
+          {/* Seleção de Par */}
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-2">
+              Par de Negociação:
+            </label>
+            <select
+              value={selectedPair}
+              onChange={(e) => onPairChange(e.target.value)}
+              className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              {pairs.map(pair => (
+                <option key={pair.value} value={pair.value}>
+                  {pair.icon} {pair.label}
+                </option>
+              ))}
+            </select>
           </div>
-          
-          <div className="text-sm text-gray-400">
-            <p>Timeframe: 1 minuto</p>
-            <p>Coleta automática ativa</p>
+
+          {/* Seleção de Timeframe */}
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-2">
+              Timeframe:
+            </label>
+            <select
+              value={selectedTimeframe}
+              onChange={(e) => onTimeframeChange(e.target.value)}
+              className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              {timeframes.map(timeframe => (
+                <option key={timeframe.value} value={timeframe.value}>
+                  {timeframe.label}
+                </option>
+              ))}
+            </select>
           </div>
         </div>
 
