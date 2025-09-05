@@ -146,8 +146,8 @@ export default function CandleGrid({ candles, pair, timeframe, date, loading }: 
                       key={`${hour}-${minute}`}
                       className={`w-8 h-8 border border-gray-600 flex items-center justify-center text-xs font-medium ${
                         candle.color === 'GREEN'
-                          ? 'candle-green'
-                          : 'candle-red'
+                          ? 'bg-green-500 text-white'
+                          : 'bg-red-500 text-white'
                       }`}
                       title={`${formatTime(hour, minute)} - ${candle.color} - O: ${candle.open_price} C: ${candle.close_price}`}
                     >
@@ -164,11 +164,11 @@ export default function CandleGrid({ candles, pair, timeframe, date, loading }: 
       {/* Legenda */}
       <div className="mt-6 flex items-center justify-center gap-6 text-sm">
         <div className="flex items-center gap-2">
-          <div className="w-4 h-4 bg-green-candle rounded"></div>
+          <div className="w-4 h-4 bg-green-500 rounded"></div>
           <span>Vela Verde (Alta)</span>
         </div>
         <div className="flex items-center gap-2">
-          <div className="w-4 h-4 bg-red-candle rounded"></div>
+          <div className="w-4 h-4 bg-red-500 rounded"></div>
           <span>Vela Vermelha (Baixa)</span>
         </div>
         <div className="flex items-center gap-2">

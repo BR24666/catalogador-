@@ -8,7 +8,7 @@ interface ControlPanelProps {
   selectedPair: 'BTCUSDT' | 'XRPUSDT' | 'SOLUSDT'
   selectedTimeframe: '1m' | '5m' | '15m'
   selectedDate: string
-  onStartStop: () => void
+  onStop: () => void
   onRefresh: () => void
   onPairChange: (pair: 'BTCUSDT' | 'XRPUSDT' | 'SOLUSDT') => void
   onTimeframeChange: (timeframe: '1m' | '5m' | '15m') => void
@@ -21,7 +21,7 @@ export default function ControlPanel({
   selectedPair,
   selectedTimeframe,
   selectedDate,
-  onStartStop,
+  onStop,
   onRefresh,
   onPairChange,
   onTimeframeChange,
@@ -51,24 +51,11 @@ export default function ControlPanel({
           
           <div className="flex gap-2">
             <button
-              onClick={onStartStop}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors ${
-                isRunning
-                  ? 'bg-red-600 hover:bg-red-700 text-white'
-                  : 'bg-green-600 hover:bg-green-700 text-white'
-              }`}
+              onClick={onStop}
+              className="flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium transition-colors"
             >
-              {isRunning ? (
-                <>
-                  <Square className="w-4 h-4" />
-                  Parar
-                </>
-              ) : (
-                <>
-                  <Play className="w-4 h-4" />
-                  Iniciar
-                </>
-              )}
+              <Square className="w-4 h-4" />
+              Parar
             </button>
             
             <button

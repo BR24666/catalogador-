@@ -36,11 +36,11 @@ export default function Home() {
     loadStatus()
     loadCandles()
     
-    // Atualizar dados a cada 30 segundos
+    // Atualizar dados a cada 10 segundos
     const interval = setInterval(() => {
       loadCandles()
       loadStatus()
-    }, 30000)
+    }, 10000)
     
     return () => clearInterval(interval)
   }, [])
@@ -95,14 +95,9 @@ export default function Home() {
     }
   }
 
-  const handleStartStop = async () => {
-    if (isRunning) {
-      await catalogService.stopCataloging()
-      setIsRunning(false)
-    } else {
-      await catalogService.startCataloging(60)
-      setIsRunning(true)
-    }
+  const handleStop = async () => {
+    await catalogService.stopCataloging()
+    setIsRunning(false)
     loadStatus()
   }
 
@@ -131,7 +126,7 @@ export default function Home() {
           selectedPair={selectedPair}
           selectedTimeframe={selectedTimeframe}
           selectedDate={selectedDate}
-          onStartStop={handleStartStop}
+          onStop={handleStop}
           onRefresh={handleRefresh}
           onPairChange={setSelectedPair}
           onTimeframeChange={setSelectedTimeframe}
@@ -150,7 +145,7 @@ export default function Home() {
         </div>
 
         {/* Stats */}
-        <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="mt-8 grid grid-cols-1 md:grid-cols-4 gap-4">
           <div className="bg-gray-800 p-4 rounded-lg">
             <h3 className="text-lg font-semibold mb-2">Status</h3>
             <p className={isRunning ? 'text-green-400' : 'text-red-400'}>
@@ -169,6 +164,13 @@ export default function Home() {
           <div className="bg-gray-800 p-4 rounded-lg">
             <h3 className="text-lg font-semibold mb-2">Velas Carregadas</h3>
             <p className="text-gray-300">{candles.length} velas</p>
+          </div>
+          <div className="bg-gray-800 p-4 rounded-lg">
+            <h3 className="text-lg font-semibold mb-2">Atualização</h3>
+            <p className="text-blue-400 flex items-center gap-2">
+              <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse"></div>
+              A cada 10s
+            </p>
           </div>
         </div>
       </div>
