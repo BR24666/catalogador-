@@ -81,48 +81,6 @@ export default function Home() {
     }
   }
 
-  const handleLoadHistorical = async (startDate: string, endDate: string) => {
-    try {
-      const response = await fetch('/api/historical-data', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ startDate, endDate, limit: 1000 })
-      })
-      const data = await response.json()
-      if (data.success) {
-        alert(`Dados históricos carregados: ${data.stats.saved} velas`)
-        loadCandles()
-      } else {
-        alert('Erro ao carregar dados históricos')
-      }
-    } catch (error) {
-      alert('Erro ao carregar dados históricos')
-    }
-  }
-
-  const handleResetAndLoad = async () => {
-    try {
-      const response = await fetch('/api/reset-and-load', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-      })
-      const result = await response.json()
-      if (result.success) {
-        console.log('✅ Reset e carregamento concluídos:', result.stats)
-        await loadCandles()
-        await loadStatus()
-        alert(`✅ Reset e carregamento concluídos!\n\n` +
-              `Dados históricos carregados: ${result.stats.historicalData.saved} velas\n` +
-              `Período: ${result.stats.historicalData.period.start} até ${result.stats.historicalData.period.end}\n` +
-              `Tabelas limpas: ${result.stats.tablesCleared.join(', ')}`)
-      } else {
-        throw new Error(result.error || 'Erro desconhecido')
-      }
-    } catch (error) {
-      console.error('Erro no reset e carregamento:', error)
-      throw error
-    }
-  }
 
   useEffect(() => {
     const initializeApp = async () => {
@@ -131,41 +89,12 @@ export default function Home() {
         await fetch('/api/init', { method: 'POST' })
         console.log('✅ Configurações do banco inicializadas')
 
-        console.log('📅 Carregando dados históricos de 2 meses...')
-        // Aguardar um pouco para o servidor inicializar
-        await new Promise(resolve => setTimeout(resolve, 2000))
-        const endDate = new Date()
-        const startDate = new Date()
-        startDate.setMonth(startDate.getMonth() - 2)
-        const startDateStr = startDate.toISOString().split('T')[0]
-        const endDateStr = endDate.toISOString().split('T')[0]
-        console.log(`📅 Período: ${startDateStr} até ${endDateStr}`)
-
-        try {
-          const response = await fetch('/api/historical-data', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ startDate: startDateStr, endDate: endDateStr, limit: 1000 }),
-          })
-          if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`)
-          }
-          const result = await response.json()
-          if (result.success) {
-            console.log('✅ Dados históricos carregados:', result.stats)
-            await loadCandles()
-          } else {
-            console.error('❌ Erro ao carregar dados históricos:', result.error)
-          }
-        } catch (error) {
-          console.error('❌ Erro ao carregar dados históricos:', error)
-          console.log('🔄 Continuando sem dados históricos...')
-        }
-
+        // Carregar apenas dados existentes na tabela
         await loadStatus()
         await loadCandles()
         console.log('✅ Status e dados carregados')
 
+        // Verificar se o catalogador está rodando
         const status = await fetch('/api/catalog/status').then(r => r.json())
         if (status.success && !status.status.isRunning) {
           console.log('🔄 Iniciando catalogador automaticamente...')
@@ -228,8 +157,6 @@ export default function Home() {
                 onDateChange={setSelectedDate}
                 onTestConnection={handleTestConnection}
                 onTestSupabase={handleTestSupabase}
-                onLoadHistorical={handleLoadHistorical}
-                onResetAndLoad={handleResetAndLoad}
               />
             </div>
             

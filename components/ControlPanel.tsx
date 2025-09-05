@@ -1,7 +1,6 @@
 'use client'
 
-import { Play, Square, RefreshCw, Calendar, Clock, Coins, History, Download } from 'lucide-react'
-import { useState } from 'react'
+import { Play, Square, RefreshCw, Calendar, Clock, Coins } from 'lucide-react'
 
 interface ControlPanelProps {
   isRunning: boolean
@@ -16,8 +15,6 @@ interface ControlPanelProps {
   onDateChange: (date: string) => void
   onTestConnection?: () => void
   onTestSupabase?: () => void
-  onLoadHistorical?: (startDate: string, endDate: string) => Promise<void>
-  onResetAndLoad?: () => Promise<void>
 }
 
 export default function ControlPanel({
@@ -33,86 +30,7 @@ export default function ControlPanel({
   onDateChange,
   onTestConnection,
   onTestSupabase,
-  onLoadHistorical,
-  onResetAndLoad,
 }: ControlPanelProps) {
-  const [historicalStartDate, setHistoricalStartDate] = useState('')
-  const [historicalEndDate, setHistoricalEndDate] = useState('')
-  const [isLoadingHistorical, setIsLoadingHistorical] = useState(false)
-  const [historicalProgress, setHistoricalProgress] = useState('')
-  const [isResetting, setIsResetting] = useState(false)
-
-  const handleLoadHistorical = async () => {
-    if (!onLoadHistorical || !historicalStartDate || !historicalEndDate) {
-      alert('Por favor, selecione as datas inicial e final')
-      return
-    }
-
-    if (new Date(historicalStartDate) >= new Date(historicalEndDate)) {
-      alert('A data inicial deve ser anterior à data final')
-      return
-    }
-
-    setIsLoadingHistorical(true)
-    setHistoricalProgress('Carregando dados históricos...')
-    
-    try {
-      await onLoadHistorical(historicalStartDate, historicalEndDate)
-      setHistoricalProgress('Dados históricos carregados com sucesso!')
-      setTimeout(() => setHistoricalProgress(''), 3000)
-    } catch (error) {
-      console.error('Erro ao carregar dados históricos:', error)
-      setHistoricalProgress('Erro ao carregar dados históricos')
-      setTimeout(() => setHistoricalProgress(''), 5000)
-    } finally {
-      setIsLoadingHistorical(false)
-    }
-  }
-
-  const handleLoad2Months = async () => {
-    if (!onLoadHistorical) return
-
-    const endDate = new Date()
-    const startDate = new Date()
-    startDate.setMonth(startDate.getMonth() - 2)
-
-    const startDateStr = startDate.toISOString().split('T')[0]
-    const endDateStr = endDate.toISOString().split('T')[0]
-
-    setIsLoadingHistorical(true)
-    setHistoricalProgress('Carregando dados dos últimos 2 meses...')
-    
-    try {
-      await onLoadHistorical(startDateStr, endDateStr)
-      setHistoricalProgress('Dados dos últimos 2 meses carregados com sucesso!')
-      setTimeout(() => setHistoricalProgress(''), 3000)
-    } catch (error) {
-      console.error('Erro ao carregar dados de 2 meses:', error)
-      setHistoricalProgress('Erro ao carregar dados de 2 meses')
-      setTimeout(() => setHistoricalProgress(''), 5000)
-    } finally {
-      setIsLoadingHistorical(false)
-    }
-  }
-
-  const handleResetAndLoad = async () => {
-    if (!onResetAndLoad) return
-    
-    setIsResetting(true)
-    setHistoricalProgress('Limpando tabelas e carregando dados históricos...')
-    
-    try {
-      await onResetAndLoad()
-      setHistoricalProgress('Reset e carregamento concluídos com sucesso!')
-      setTimeout(() => setHistoricalProgress(''), 5000)
-    } catch (error) {
-      console.error('Erro no reset e carregamento:', error)
-      setHistoricalProgress(`Erro: ${error instanceof Error ? error.message : 'Erro desconhecido'}`)
-      setTimeout(() => setHistoricalProgress(''), 5000)
-    } finally {
-      setIsResetting(false)
-    }
-  }
 
   const pairs = [
     { value: 'BTCUSDT', label: 'BTC/USDT', icon: '₿' },
@@ -260,97 +178,27 @@ export default function ControlPanel({
           )}
         </div>
 
-        {/* Dados Históricos */}
+        {/* Status */}
         <div className="space-y-4">
           <h3 className="text-lg font-semibold flex items-center gap-2">
-            <History className="w-5 h-5" />
-            Dados Históricos
+            <Clock className="w-5 h-5" />
+            Status
           </h3>
           
           <div className="space-y-3">
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-1">
-                Data Inicial:
-              </label>
-              <input
-                type="date"
-                value={historicalStartDate}
-                onChange={(e) => setHistoricalStartDate(e.target.value)}
-                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                disabled={isLoadingHistorical}
-              />
+            <div className="p-3 bg-gray-700 rounded-lg">
+              <p className="text-sm text-gray-300">Status do Catalogador:</p>
+              <p className={`font-semibold ${isRunning ? 'text-green-400' : 'text-red-400'}`}>
+                {isRunning ? '🟢 Rodando' : '🔴 Parado'}
+              </p>
             </div>
             
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-1">
-                Data Final:
-              </label>
-              <input
-                type="date"
-                value={historicalEndDate}
-                onChange={(e) => setHistoricalEndDate(e.target.value)}
-                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                disabled={isLoadingHistorical}
-              />
-            </div>
-            
-            <button
-              onClick={handleLoad2Months}
-              disabled={isLoadingHistorical}
-              className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white rounded-lg font-medium transition-colors mb-2"
-            >
-              {isLoadingHistorical ? (
-                <>
-                  <RefreshCw className="w-4 h-4 animate-spin" />
-                  Carregando...
-                </>
-              ) : (
-                <>
-                  <History className="w-4 h-4" />
-                  Carregar 2 Meses
-                </>
-              )}
-            </button>
-            
-            <button
-              onClick={handleLoadHistorical}
-              disabled={isLoadingHistorical || !historicalStartDate || !historicalEndDate}
-              className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white rounded-lg font-medium transition-colors"
-            >
-              {isLoadingHistorical ? (
-                <>
-                  <RefreshCw className="w-4 h-4 animate-spin" />
-                  Carregando...
-                </>
-              ) : (
-                <>
-                  <Download className="w-4 h-4" />
-                  Carregar Período
-                </>
-              )}
-            </button>
-            
-            <button
-              onClick={handleResetAndLoad}
-              disabled={isResetting || isLoadingHistorical}
-              className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white rounded-lg font-medium transition-colors"
-            >
-              {isResetting ? (
-                <>
-                  <RefreshCw className="w-4 h-4 animate-spin" />
-                  Resetando...
-                </>
-              ) : (
-                <>
-                  <History className="w-4 h-4" />
-                  Reset + Carregar 2 Meses
-                </>
-              )}
-            </button>
-            
-            {historicalProgress && (
-              <div className="text-sm text-center p-2 bg-gray-700 rounded-lg">
-                <p className="text-gray-300">{historicalProgress}</p>
+            {lastUpdate && (
+              <div className="p-3 bg-gray-700 rounded-lg">
+                <p className="text-sm text-gray-300">Última Atualização:</p>
+                <p className="font-mono text-sm">
+                  {new Date(lastUpdate).toLocaleString('pt-BR')}
+                </p>
               </div>
             )}
           </div>

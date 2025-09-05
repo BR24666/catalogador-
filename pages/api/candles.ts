@@ -9,29 +9,39 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   try {
     const { pair = 'SOLUSDT', timeframe = '1m', limit = 100 } = req.query
 
-    // Mock data para demonstração
-    const mockCandles = Array.from({ length: Number(limit) }, (_, i) => ({
-      id: `candle-${i}`,
-      pair: pair as string,
-      timeframe: timeframe as string,
-      timestamp: new Date(Date.now() - i * 60000).toISOString(),
-      open_price: 100 + Math.random() * 10,
-      high_price: 105 + Math.random() * 10,
-      low_price: 95 + Math.random() * 10,
-      close_price: 100 + Math.random() * 10,
-      volume: Math.random() * 1000,
-      color: Math.random() > 0.5 ? 'GREEN' : 'RED',
-      hour: new Date(Date.now() - i * 60000).getHours(),
-      minute: new Date(Date.now() - i * 60000).getMinutes(),
-      day: new Date(Date.now() - i * 60000).getDate(),
-      month: new Date(Date.now() - i * 60000).getMonth() + 1,
-      year: new Date(Date.now() - i * 60000).getFullYear(),
-      full_date: new Date(Date.now() - i * 60000).toISOString().split('T')[0],
-      time_key: `${new Date(Date.now() - i * 60000).getHours()}:${new Date(Date.now() - i * 60000).getMinutes()}`,
-      date_key: new Date(Date.now() - i * 60000).toISOString().split('T')[0],
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
-    }))
+    // Mock data para demonstração - dados mais realistas
+    const basePrice = 180 // Preço base do SOL
+    const mockCandles = Array.from({ length: Number(limit) }, (_, i) => {
+      const timestamp = new Date(Date.now() - i * 60000)
+      const priceVariation = (Math.random() - 0.5) * 2 // Variação de -1 a +1
+      const openPrice = basePrice + priceVariation
+      const closePrice = openPrice + (Math.random() - 0.5) * 1
+      const highPrice = Math.max(openPrice, closePrice) + Math.random() * 0.5
+      const lowPrice = Math.min(openPrice, closePrice) - Math.random() * 0.5
+      
+      return {
+        id: `candle-${i}`,
+        pair: pair as string,
+        timeframe: timeframe as string,
+        timestamp: timestamp.toISOString(),
+        open_price: parseFloat(openPrice.toFixed(2)),
+        high_price: parseFloat(highPrice.toFixed(2)),
+        low_price: parseFloat(lowPrice.toFixed(2)),
+        close_price: parseFloat(closePrice.toFixed(2)),
+        volume: Math.random() * 1000 + 100,
+        color: closePrice >= openPrice ? 'GREEN' : 'RED',
+        hour: timestamp.getHours(),
+        minute: timestamp.getMinutes(),
+        day: timestamp.getDate(),
+        month: timestamp.getMonth() + 1,
+        year: timestamp.getFullYear(),
+        full_date: timestamp.toISOString().split('T')[0],
+        time_key: `${timestamp.getHours().toString().padStart(2, '0')}:${timestamp.getMinutes().toString().padStart(2, '0')}`,
+        date_key: timestamp.toISOString().split('T')[0],
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      }
+    })
 
     res.status(200).json({
       success: true,
