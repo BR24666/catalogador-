@@ -36,10 +36,6 @@ export default function CandleGrid({ candles, pair, timeframe, date, loading }: 
     switch (tf) {
       case '1m':
         return Array.from({ length: 60 }, (_, i) => i)
-      case '5m':
-        return Array.from({ length: 12 }, (_, i) => i * 5)
-      case '15m':
-        return Array.from({ length: 4 }, (_, i) => i * 15)
       default:
         return Array.from({ length: 60 }, (_, i) => i)
     }

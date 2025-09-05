@@ -8,8 +8,8 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey)
 // Tipos para o banco de dados
 export interface CandleData {
   id: string
-  pair: 'BTCUSDT' | 'XRPUSDT' | 'SOLUSDT'
-  timeframe: '1m' | '5m' | '15m'
+  pair: 'SOLUSDT'
+  timeframe: '1m'
   timestamp: string
   open_price: number
   high_price: number

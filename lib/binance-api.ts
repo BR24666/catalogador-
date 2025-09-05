@@ -105,8 +105,8 @@ export class BinanceAPI {
   }
 
   async getLatestCandles(
-    pairs: string[] = ['BTCUSDT', 'XRPUSDT', 'SOLUSDT'],
-    timeframes: string[] = ['1m', '5m', '15m']
+    pairs: string[] = ['SOLUSDT'],
+    timeframes: string[] = ['1m']
   ): Promise<ProcessedKline[]> {
     const results: ProcessedKline[] = []
 

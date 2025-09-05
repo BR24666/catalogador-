@@ -12,15 +12,35 @@ export default function Home() {
   const [catalogService] = useState(new CatalogService())
   const [isRunning, setIsRunning] = useState(false)
   const [lastUpdate, setLastUpdate] = useState<string | null>(null)
-  const [selectedPair, setSelectedPair] = useState<'BTCUSDT' | 'XRPUSDT' | 'SOLUSDT'>('BTCUSDT')
-  const [selectedTimeframe, setSelectedTimeframe] = useState<'1m' | '5m' | '15m'>('1m')
+  const [selectedPair, setSelectedPair] = useState<'SOLUSDT'>('SOLUSDT')
+  const [selectedTimeframe, setSelectedTimeframe] = useState<'1m'>('1m')
   const [selectedDate, setSelectedDate] = useState<string>(format(new Date(), 'yyyy-MM-dd'))
   const [candles, setCandles] = useState<CandleData[]>([])
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
-    loadStatus()
-    loadCandles()
+    const initializeApp = async () => {
+      try {
+        // Inicializar configurações do banco
+        await fetch('/api/init', { method: 'POST' })
+        
+        // Carregar status e dados
+        await loadStatus()
+        await loadCandles()
+        
+        // Iniciar catalogador automaticamente
+        const status = await catalogService.getCatalogStatus()
+        if (!status.isRunning) {
+          console.log('Iniciando catalogador automaticamente...')
+          await catalogService.startCataloging(60) // 1 minuto
+          setIsRunning(true)
+        }
+      } catch (error) {
+        console.error('Erro na inicialização:', error)
+      }
+    }
+    
+    initializeApp()
     
     // Atualizar dados a cada 30 segundos
     const interval = setInterval(() => {
@@ -74,6 +94,23 @@ export default function Home() {
     loadStatus()
   }
 
+  const handleTestConnection = async () => {
+    try {
+      const response = await fetch('/api/test-binance')
+      const result = await response.json()
+      
+      if (result.success) {
+        alert('✅ Conexão com Binance OK!\n\nÚltima vela:\n' + 
+              `Preço: $${result.data.lastCandle?.close_price}\n` +
+              `Timestamp: ${new Date(result.data.lastCandle?.timestamp).toLocaleString('pt-BR')}`)
+      } else {
+        alert('❌ Erro na conexão com Binance:\n' + result.message)
+      }
+    } catch (error) {
+      alert('❌ Erro ao testar conexão: ' + error)
+    }
+  }
+
   return (
     <div className="bg-gray-900 text-white p-6">
       <div className="max-w-7xl mx-auto">
@@ -83,7 +120,7 @@ export default function Home() {
             📊 Catalogador de Velas
           </h1>
           <p className="text-gray-400 text-center">
-            BTC • XRP • SOL | 1min • 5min • 15min
+            SOL/USD | 1 minuto | Coleta automática
           </p>
         </div>
 
@@ -99,6 +136,7 @@ export default function Home() {
           onPairChange={setSelectedPair}
           onTimeframeChange={setSelectedTimeframe}
           onDateChange={setSelectedDate}
+          onTestConnection={handleTestConnection}
         />
 
         {/* Candle Grid */}

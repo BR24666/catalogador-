@@ -17,7 +17,7 @@ export class CatalogService {
     }
 
     this.isRunning = true
-    console.log('Iniciando catalogador...')
+    console.log('Iniciando catalogador SOL/USD...')
 
     // Atualizar configurações no banco
     await this.updateSettings(true, intervalSeconds)
@@ -25,10 +25,10 @@ export class CatalogService {
     // Executar imediatamente
     await this.catalogCandles()
 
-    // Configurar intervalo
+    // Configurar intervalo para 1 minuto
     this.intervalId = setInterval(async () => {
       await this.catalogCandles()
-    }, intervalSeconds * 1000)
+    }, 60000) // 60 segundos = 1 minuto
   }
 
   async stopCataloging(): Promise<void> {
@@ -51,10 +51,10 @@ export class CatalogService {
 
   private async catalogCandles(): Promise<void> {
     try {
-      console.log('Coletando dados das velas...')
+      console.log('Coletando dados das velas SOL/USD...')
       
-      const pairs = ['BTCUSDT', 'XRPUSDT', 'SOLUSDT']
-      const timeframes = ['1m', '5m', '15m']
+      const pairs = ['SOLUSDT']
+      const timeframes = ['1m']
       
       const candles = await this.binanceAPI.getLatestCandles(pairs, timeframes)
       
@@ -110,15 +110,23 @@ export class CatalogService {
 
   private async updateSettings(isRunning: boolean, intervalSeconds?: number): Promise<void> {
     try {
-      const updateData: any = { is_running: isRunning }
+      const updateData: any = { 
+        is_running: isRunning,
+        pairs: ['SOLUSDT'],
+        timeframes: ['1m'],
+        updated_at: new Date().toISOString()
+      }
       if (intervalSeconds) {
         updateData.update_interval_seconds = intervalSeconds
       }
 
       const { error } = await supabase
         .from('catalog_settings')
-        .update(updateData)
-        .eq('id', 1)
+        .upsert({
+          id: 1,
+          ...updateData,
+          created_at: new Date().toISOString()
+        })
 
       if (error) {
         console.error('Erro ao atualizar configurações:', error)
