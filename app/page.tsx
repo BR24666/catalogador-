@@ -29,6 +29,10 @@ export default function Home() {
         
         // Carregar dados históricos de 2 meses atrás
         console.log('📅 Carregando dados históricos de 2 meses...')
+        
+        // Aguardar um pouco para o servidor inicializar
+        await new Promise(resolve => setTimeout(resolve, 2000))
+        
         const endDate = new Date()
         const startDate = new Date()
         startDate.setMonth(startDate.getMonth() - 2)
@@ -36,11 +40,38 @@ export default function Home() {
         const startDateStr = startDate.toISOString().split('T')[0]
         const endDateStr = endDate.toISOString().split('T')[0]
         
+        console.log(`📅 Período: ${startDateStr} até ${endDateStr}`)
+        
         try {
-          await handleLoadHistorical(startDateStr, endDateStr)
-          console.log('✅ Dados históricos carregados com sucesso!')
+          // Carregar dados históricos diretamente
+          const response = await fetch('/api/historical-data', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              startDate: startDateStr,
+              endDate: endDateStr,
+              limit: 1000
+            }),
+          })
+          
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`)
+          }
+          
+          const result = await response.json()
+          
+          if (result.success) {
+            console.log('✅ Dados históricos carregados:', result.stats)
+            // Recarregar dados após carregar históricos
+            await loadCandles()
+          } else {
+            console.error('❌ Erro ao carregar dados históricos:', result.error)
+          }
         } catch (error) {
           console.error('❌ Erro ao carregar dados históricos:', error)
+          console.log('🔄 Continuando sem dados históricos...')
         }
         
         // Carregar status e dados atuais
@@ -193,6 +224,34 @@ export default function Home() {
     }
   }
 
+  const handleResetAndLoad = async () => {
+    try {
+      const response = await fetch('/api/reset-and-load', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
+      
+      const result = await response.json()
+      
+      if (result.success) {
+        console.log('✅ Reset e carregamento concluídos:', result.stats)
+        await loadCandles() // Recarregar dados após reset
+        await loadStatus() // Recarregar status
+        alert(`✅ Reset e carregamento concluídos!\n\n` +
+              `Dados históricos carregados: ${result.stats.historicalData.saved} velas\n` +
+              `Período: ${result.stats.historicalData.period.start} até ${result.stats.historicalData.period.end}\n` +
+              `Tabelas limpas: ${result.stats.tablesCleared.join(', ')}`)
+      } else {
+        throw new Error(result.error || 'Erro desconhecido')
+      }
+    } catch (error) {
+      console.error('Erro no reset e carregamento:', error)
+      throw error
+    }
+  }
+
   return (
     <div className="bg-gray-900 text-white p-6">
       <div className="max-w-7xl mx-auto">
@@ -227,6 +286,7 @@ export default function Home() {
           onTestConnection={handleTestConnection}
           onTestSupabase={handleTestSupabase}
           onLoadHistorical={handleLoadHistorical}
+          onResetAndLoad={handleResetAndLoad}
         />
 
         {/* Candle Grid */}

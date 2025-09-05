@@ -17,6 +17,7 @@ interface ControlPanelProps {
   onTestConnection?: () => void
   onTestSupabase?: () => void
   onLoadHistorical?: (startDate: string, endDate: string) => Promise<void>
+  onResetAndLoad?: () => Promise<void>
 }
 
 export default function ControlPanel({
@@ -33,11 +34,13 @@ export default function ControlPanel({
   onTestConnection,
   onTestSupabase,
   onLoadHistorical,
+  onResetAndLoad,
 }: ControlPanelProps) {
   const [historicalStartDate, setHistoricalStartDate] = useState('')
   const [historicalEndDate, setHistoricalEndDate] = useState('')
   const [isLoadingHistorical, setIsLoadingHistorical] = useState(false)
   const [historicalProgress, setHistoricalProgress] = useState('')
+  const [isResetting, setIsResetting] = useState(false)
 
   const handleLoadHistorical = async () => {
     if (!onLoadHistorical || !historicalStartDate || !historicalEndDate) {
@@ -89,6 +92,25 @@ export default function ControlPanel({
       setTimeout(() => setHistoricalProgress(''), 5000)
     } finally {
       setIsLoadingHistorical(false)
+    }
+  }
+
+  const handleResetAndLoad = async () => {
+    if (!onResetAndLoad) return
+    
+    setIsResetting(true)
+    setHistoricalProgress('Limpando tabelas e carregando dados históricos...')
+    
+    try {
+      await onResetAndLoad()
+      setHistoricalProgress('Reset e carregamento concluídos com sucesso!')
+      setTimeout(() => setHistoricalProgress(''), 5000)
+    } catch (error) {
+      console.error('Erro no reset e carregamento:', error)
+      setHistoricalProgress(`Erro: ${error instanceof Error ? error.message : 'Erro desconhecido'}`)
+      setTimeout(() => setHistoricalProgress(''), 5000)
+    } finally {
+      setIsResetting(false)
     }
   }
 
@@ -304,6 +326,24 @@ export default function ControlPanel({
                 <>
                   <Download className="w-4 h-4" />
                   Carregar Período
+                </>
+              )}
+            </button>
+            
+            <button
+              onClick={handleResetAndLoad}
+              disabled={isResetting || isLoadingHistorical}
+              className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white rounded-lg font-medium transition-colors"
+            >
+              {isResetting ? (
+                <>
+                  <RefreshCw className="w-4 h-4 animate-spin" />
+                  Resetando...
+                </>
+              ) : (
+                <>
+                  <History className="w-4 h-4" />
+                  Reset + Carregar 2 Meses
                 </>
               )}
             </button>
