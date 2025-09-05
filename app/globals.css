@@ -1,0 +1,40 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+@layer components {
+  .candle-green {
+    @apply bg-green-candle text-white;
+  }
+  
+  .candle-red {
+    @apply bg-red-candle text-white;
+  }
+  
+  .candle-green-light {
+    @apply bg-green-light text-green-800;
+  }
+  
+  .candle-red-light {
+    @apply bg-red-light text-red-800;
+  }
+  
+  .time-grid {
+    display: grid;
+    grid-template-columns: 80px repeat(60, 1fr);
+    gap: 1px;
+  }
+  
+  .minute-cell {
+    @apply w-4 h-4 text-xs flex items-center justify-center border border-gray-600;
+  }
+}
