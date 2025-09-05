@@ -54,7 +54,7 @@ export async function GET() {
   } catch (error) {
     console.error('❌ Erro no teste:', error)
     return NextResponse.json(
-      { success: false, message: 'Erro ao coletar dados', error: error.message },
+      { success: false, message: 'Erro ao coletar dados', error: error instanceof Error ? error.message : String(error) },
       { status: 500 }
     )
   }
