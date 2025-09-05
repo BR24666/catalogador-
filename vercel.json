@@ -3,5 +3,9 @@
     "app/api/**/*.ts": {
       "maxDuration": 30
     }
-  }
+  },
+  "buildCommand": "npm run build",
+  "installCommand": "npm ci --legacy-peer-deps",
+  "framework": "nextjs",
+  "nodeVersion": "18.x"
 }
