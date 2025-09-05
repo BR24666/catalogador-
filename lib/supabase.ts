@@ -6,9 +6,20 @@ export const supabase = {
   from: (table: string) => ({
     select: (columns = '*') => ({
       eq: (column: string, value: any) => ({
+        order: (column: string, options?: any) => ({
+          then: (callback: (data: any) => void) => {
+            console.log(`Mock select from ${table} where ${column} = ${value} order by ${column}`)
+            callback({ data: [], error: null })
+          }
+        }),
         then: (callback: (data: any) => void) => {
-          // Implementação simplificada - retorna dados mockados
           console.log(`Mock select from ${table} where ${column} = ${value}`)
+          callback({ data: [], error: null })
+        }
+      }),
+      order: (column: string, options?: any) => ({
+        then: (callback: (data: any) => void) => {
+          console.log(`Mock select from ${table} order by ${column}`)
           callback({ data: [], error: null })
         }
       }),
