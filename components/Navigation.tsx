@@ -1,12 +1,7 @@
-'use client'
-
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
 import { BarChart3, Home, Activity } from 'lucide-react'
 
 export default function Navigation() {
-  const pathname = usePathname()
-
   const navItems = [
     {
       href: '/',
@@ -33,17 +28,12 @@ export default function Navigation() {
             <div className="flex space-x-4">
               {navItems.map((item) => {
                 const Icon = item.icon
-                const isActive = pathname === item.href
                 
                 return (
                   <Link
                     key={item.href}
                     href={item.href}
-                    className={`flex items-center space-x-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                      isActive
-                        ? 'bg-blue-600 text-white'
-                        : 'text-gray-300 hover:bg-gray-700 hover:text-white'
-                    }`}
+                    className="flex items-center space-x-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors text-gray-300 hover:bg-gray-700 hover:text-white"
                   >
                     <Icon className="w-4 h-4" />
                     <span>{item.label}</span>
