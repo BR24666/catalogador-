@@ -285,8 +285,6 @@ export default function Home() {
           onDateChange={setSelectedDate}
           onTestConnection={handleTestConnection}
           onTestSupabase={handleTestSupabase}
-          onLoadHistorical={handleLoadHistorical}
-          onResetAndLoad={handleResetAndLoad}
         />
 
         {/* Candle Grid */}
