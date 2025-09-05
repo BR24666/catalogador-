@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { BinanceAPI } from '@/lib/binance-api'
 import { supabase } from '@/lib/supabase'
 
-const binanceAPI = new BinanceAPI()
+const binanceAPI = BinanceAPI.getInstance()
 
 export async function POST(request: NextRequest) {
   try {
