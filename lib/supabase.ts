@@ -52,6 +52,18 @@ export const supabase = {
         callback({ data: [data], error: null })
       }
     }),
+    update: (data: any) => ({
+      eq: (column: string, value: any) => ({
+        then: (callback: (result: any) => void) => {
+          console.log(`Mock update ${table} set ${JSON.stringify(data)} where ${column} = ${value}`)
+          callback({ data: [data], error: null })
+        }
+      }),
+      then: (callback: (result: any) => void) => {
+        console.log(`Mock update ${table} set ${JSON.stringify(data)}`)
+        callback({ data: [data], error: null })
+      }
+    }),
     delete: () => ({
       neq: (column: string, value: any) => ({
         then: (callback: (result: any) => void) => {
