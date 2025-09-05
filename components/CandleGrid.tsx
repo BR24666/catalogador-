@@ -69,6 +69,24 @@ export default function CandleGrid({ candles, pair, timeframe, date, loading }: 
     )
   }
 
+  if (candles.length === 0) {
+    return (
+      <div className="bg-gray-800 rounded-lg p-8">
+        <div className="text-center">
+          <div className="text-6xl mb-4">📊</div>
+          <h3 className="text-xl font-semibold mb-2">Nenhuma vela encontrada</h3>
+          <p className="text-gray-400 mb-4">
+            Para a data {format(new Date(date), 'dd/MM/yyyy', { locale: ptBR })}
+          </p>
+          <p className="text-sm text-gray-500">
+            O catalogador está coletando dados automaticamente. 
+            Aguarde alguns minutos para ver as velas aparecerem.
+          </p>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="bg-gray-800 rounded-lg p-6">
       <div className="mb-4">

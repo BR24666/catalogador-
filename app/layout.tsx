@@ -2,6 +2,10 @@ import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import './globals.css'
 import Navigation from '@/components/Navigation'
+import { initializeAutoCatalog } from '@/lib/auto-catalog'
+
+// Inicializar catalogador automaticamente
+initializeAutoCatalog()
 
 const inter = Inter({ subsets: ['latin'] })
 

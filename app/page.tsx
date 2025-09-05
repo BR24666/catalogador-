@@ -19,8 +19,30 @@ export default function Home() {
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
+    // Iniciar catalogador automaticamente
+    const autoStart = async () => {
+      try {
+        const response = await fetch('/api/catalog/auto-start')
+        const result = await response.json()
+        if (result.success) {
+          console.log('✅ Catalogador iniciado automaticamente')
+        }
+      } catch (error) {
+        console.error('Erro ao iniciar catalogador:', error)
+      }
+    }
+    
+    autoStart()
     loadStatus()
     loadCandles()
+    
+    // Atualizar dados a cada 30 segundos
+    const interval = setInterval(() => {
+      loadCandles()
+      loadStatus()
+    }, 30000)
+    
+    return () => clearInterval(interval)
   }, [])
 
   useEffect(() => {
@@ -36,13 +58,36 @@ export default function Home() {
   const loadCandles = async () => {
     setLoading(true)
     try {
+      console.log('🔍 Carregando velas para:', selectedPair, selectedTimeframe, selectedDate)
+      
       const data = await catalogService.getCandlesByDateRange(
         selectedPair,
         selectedTimeframe,
         selectedDate,
         selectedDate
       )
+      
+      console.log('📊 Velas carregadas:', data.length)
       setCandles(data)
+      
+      // Se não há dados, tentar carregar dados de hoje
+      if (data.length === 0) {
+        const today = format(new Date(), 'yyyy-MM-dd')
+        if (selectedDate !== today) {
+          console.log('🔄 Tentando carregar dados de hoje:', today)
+          const todayData = await catalogService.getCandlesByDateRange(
+            selectedPair,
+            selectedTimeframe,
+            today,
+            today
+          )
+          console.log('📊 Dados de hoje:', todayData.length)
+          if (todayData.length > 0) {
+            setCandles(todayData)
+            setSelectedDate(today)
+          }
+        }
+      }
     } catch (error) {
       console.error('Erro ao carregar velas:', error)
     } finally {
